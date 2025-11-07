@@ -2,64 +2,61 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-// --- 1. MODELO DE DADOS (Task) ---
-class Task {
+// --- 1. MODELO DE DADOS (Tarefa) ---
+class Tarefa {
   final String id;
-  String title;
-  bool isCompleted;
+  String titulo;
+  bool estaCompleta;
 
-  Task({required this.title, this.isCompleted = false}) : id = DateTime.now().microsecondsSinceEpoch.toString();
+  Tarefa({required this.titulo, this.estaCompleta = false}) : id = DateTime.now().microsecondsSinceEpoch.toString();
 }
 
 // --- 2. VIEWMODEL (ChangeNotifier) ---
-class TodoListViewModel extends ChangeNotifier {
-  final List<Task> _tasks = [];
+class ViewModelListaTarefas extends ChangeNotifier {
+  final List<Tarefa> _tarefas = [];
 
-  List<Task> get tasks => _tasks; // Getter para acessar a lista
+  List<Tarefa> get tarefas => _tarefas; // Getter para acessar a lista
 
-  void addTask(String title) {
-    if (title.isNotEmpty) {
-      // Note: Idealmente, em MVVM puro, você criaria uma cópia defensiva da Task
-      // antes de adicioná-la, mas o Flutter geralmente permite essa mutação interna.
-      _tasks.add(Task(title: title));
+  void adicionarTarefa(String titulo) {
+    if (titulo.isNotEmpty) {
+      _tarefas.add(Tarefa(titulo: titulo));
       notifyListeners(); // Notifica todos os Widgets que estão 'escutando'
     }
   }
 
-  void toggleTask(String id) {
-    final task = _tasks.firstWhere((task) => task.id == id);
-    task.isCompleted = !task.isCompleted;
+  void alternarTarefa(String id) {
+    final tarefa = _tarefas.firstWhere((t) => t.id == id);
+    tarefa.estaCompleta = !tarefa.estaCompleta;
     notifyListeners(); // Notifica a alteração
   }
 
-  int get remainingTasks => _tasks.where((task) => !task.isCompleted).length;
+  int get tarefasRestantes => _tarefas.where((t) => !t.estaCompleta).length;
 }
 
 void main() {
-  runApp(const ProviderApp());
+  runApp(const AppProvider());
 }
 
-class ProviderApp extends StatelessWidget {
-  const ProviderApp({super.key});
+class AppProvider extends StatelessWidget {
+  const AppProvider({super.key});
 
   @override
   Widget build(BuildContext context) {
     // Envolve toda a aplicação com o ChangeNotifierProvider
-    // Usando a ViewModel renomeada
     return ChangeNotifierProvider(
-      create: (context) => TodoListViewModel(),
+      create: (context) => ViewModelListaTarefas(),
       child: MaterialApp(
         title: 'Abordagem Provider (MVVM Conceitual)',
         theme: ThemeData(primarySwatch: Colors.indigo),
-        home: const TodoListScreenProvider(),
+        home: const TelaListaTarefasProvider(),
       ),
     );
   }
 }
 
 // --- 3. WIDGET PRINCIPAL (View) ---
-class TodoListScreenProvider extends StatelessWidget {
-  const TodoListScreenProvider({super.key});
+class TelaListaTarefasProvider extends StatelessWidget {
+  const TelaListaTarefasProvider({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -68,14 +65,14 @@ class TodoListScreenProvider extends StatelessWidget {
         title: const Text('2. Provider (ChangeNotifier)'),
         actions: [
           // Usa Consumer para reagir apenas ao contador de tarefas restantes
-          // O tipo agora é TodoListViewModel
-          Consumer<TodoListViewModel>(
-            builder: (context, model, child) {
+          // O tipo agora é ViewModelListaTarefas
+          Consumer<ViewModelListaTarefas>(
+            builder: (context, viewModel, child) {
               return Center(
                 child: Padding(
                   padding: const EdgeInsets.only(right: 16.0),
                   child: Text(
-                    'Pendentes: ${model.remainingTasks}',
+                    'Pendentes: ${viewModel.tarefasRestantes}',
                     style: const TextStyle(fontSize: 16),
                   ),
                 ),
@@ -86,10 +83,10 @@ class TodoListScreenProvider extends StatelessWidget {
       ),
       body: const Column(
         children: <Widget>[
-          TaskInputProvider(), // Widget de entrada (View)
+          EntradaTarefaProvider(), // Widget de entrada (View)
           Divider(),
           Expanded(
-            child: TaskListProvider(), // Widget da lista (View)
+            child: ListaTarefasProvider(), // Widget da lista (View)
           ),
         ],
       ),
@@ -100,18 +97,18 @@ class TodoListScreenProvider extends StatelessWidget {
 // --- 4. WIDGETS QUE INTERAGEM/ESCUTAM O ESTADO (View) ---
 
 // Widget de Entrada (usa context.read() para a ação)
-class TaskInputProvider extends StatelessWidget {
-  const TaskInputProvider({super.key});
+class EntradaTarefaProvider extends StatelessWidget {
+  const EntradaTarefaProvider({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final controller = TextEditingController();
+    final controlador = TextEditingController();
     // Obtém a instância da ViewModel
-    final viewModel = context.read<TodoListViewModel>();
+    final viewModel = context.read<ViewModelListaTarefas>();
 
-    void submitData() {
-      viewModel.addTask(controller.text);
-      controller.clear();
+    void enviarDados() {
+      viewModel.adicionarTarefa(controlador.text);
+      controlador.clear();
     }
 
     return Padding(
@@ -120,17 +117,17 @@ class TaskInputProvider extends StatelessWidget {
         children: <Widget>[
           Expanded(
             child: TextField(
-              controller: controller,
+              controller: controlador,
               decoration: const InputDecoration(
                 labelText: 'Nova Tarefa',
                 border: OutlineInputBorder(),
               ),
-              onSubmitted: (_) => submitData(),
+              onSubmitted: (_) => enviarDados(),
             ),
           ),
           IconButton(
             icon: const Icon(Icons.add_circle, color: Colors.indigo),
-            onPressed: submitData,
+            onPressed: enviarDados,
           ),
         ],
       ),
@@ -139,37 +136,37 @@ class TaskInputProvider extends StatelessWidget {
 }
 
 // Widget da Lista (usa context.watch() para reconstruir)
-class TaskListProvider extends StatelessWidget {
-  const TaskListProvider({super.key});
+class ListaTarefasProvider extends StatelessWidget {
+  const ListaTarefasProvider({super.key});
 
   @override
   Widget build(BuildContext context) {
     // Obtém a ViewModel e reconstrói o widget quando notificado
-    final viewModel = context.watch<TodoListViewModel>();
+    final viewModel = context.watch<ViewModelListaTarefas>();
 
-    if (viewModel.tasks.isEmpty) {
+    if (viewModel.tarefas.isEmpty) {
       return const Center(
         child: Text('Nenhuma tarefa adicionada ainda!', style: TextStyle(fontSize: 18)),
       );
     }
 
     return ListView.builder(
-      itemCount: viewModel.tasks.length,
+      itemCount: viewModel.tarefas.length,
       itemBuilder: (ctx, index) {
-        final task = viewModel.tasks[index];
+        final tarefa = viewModel.tarefas[index];
         return ListTile(
           title: Text(
-            task.title,
+            tarefa.titulo,
             style: TextStyle(
-              decoration: task.isCompleted ? TextDecoration.lineThrough : null,
-              color: task.isCompleted ? Colors.grey : Colors.black,
+              decoration: tarefa.estaCompleta ? TextDecoration.lineThrough : null,
+              color: tarefa.estaCompleta ? Colors.grey : Colors.black,
             ),
           ),
           trailing: Checkbox(
             activeColor: Colors.indigo,
-            value: task.isCompleted,
+            value: tarefa.estaCompleta,
             // Ação chama o método da ViewModel diretamente
-            onChanged: (_) => viewModel.toggleTask(task.id),
+            onChanged: (_) => viewModel.alternarTarefa(tarefa.id),
           ),
         );
       },
