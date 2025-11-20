@@ -1,6 +1,5 @@
-// main.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+// TODO: Importar o package provider
 
 // TODO: Criar model Tarefa
 class Tarefa {
@@ -8,6 +7,10 @@ class Tarefa {
 
 // TODO: Criar ViewModelListaTarefas que estende ChangeNotifier
 class ViewModelListaTarefas extends ChangeNotifier {
+  final List<Tarefa> _tarefas = [];
+  
+  List<Tarefa> get tarefas => _tarefas; // Getter para acessar a lista
+
   void adicionarTarefa(String titulo) {
     // TODO: Implementação da lógica de adicionar (e chame notifyListeners())
   }
@@ -74,7 +77,7 @@ class EntradaTarefaProvider extends StatelessWidget {
     final controlador = TextEditingController();
     
     // TODO: Usar context.read() para obter o ViewModel
-    final viewModel;
+    final viewModel = ViewModelListaTarefas();
 
     void enviarDados() {
       viewModel.adicionarTarefa(controlador.text);
@@ -111,7 +114,7 @@ class ListaTarefasProvider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // TODO: Usar context.watch() para reconstruir a lista.
-    final viewModel;
+    final viewModel = ViewModelListaTarefas();
 
     if (viewModel.tarefas.isEmpty) {
       return const Center(
@@ -125,16 +128,16 @@ class ListaTarefasProvider extends StatelessWidget {
         final tarefa = viewModel.tarefas[index];
         return ListTile(
           title: Text(
-            tarefa.titulo,
+            "TITULO DA TAREFA", // TODO: Usar titulo da tarefa
             style: TextStyle(
-              decoration: tarefa.estaCompleta ? TextDecoration.lineThrough : null,
-              color: tarefa.estaCompleta ? Colors.grey : Colors.black,
+              decoration: true ? TextDecoration.lineThrough : null, // TODO: Verificar se a tarefa está completa
+              color: true ? Colors.grey : Colors.black, // TODO: Verificar se a tarefa está completa
             ),
           ),
           trailing: Checkbox(
             activeColor: Colors.indigo,
-            value: tarefa.estaCompleta,
-            onChanged: (_) => viewModel.alternarTarefa(tarefa.id),
+            value: true, // TODO: Verificar se a tarefa está completa
+            onChanged: (_) => viewModel.alternarTarefa(""), // TODO: Informar a ViewModel para alternar o status
           ),
         );
       },
